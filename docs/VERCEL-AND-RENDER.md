@@ -63,9 +63,9 @@ If `https://kodemy-lms.onrender.com` is the **repo root** Next app (`npm run bui
 1. Set **`DATABASE_URL`** on that service (e.g. `file:./prisma/prod.db`). **Without this, `/api/subjects` returns 500** at runtime.
 2. **Build Command** (must apply schema before `next build`):  
    `npm install && npm run build:render`  
-   (`build:render` runs `prisma db push && next build` — see root `package.json`.)
+   (`build:render` runs `prisma db push`, **`prisma db seed`**, then `next build` — see root `package.json`.)
 3. **Start Command:** `npm start`
-4. After first deploy, open **Shell** and run **`npm run db:seed`** once so published subjects exist (or the homepage shows "No subjects yet" with no error).
+4. **No Shell required:** Render Shell is a paid feature on some plans. Seeding runs **during build** via `build:render`, so you don't need Shell to load sample subjects.
 5. If you still see **500**, open **Runtime logs** (not only build logs) — Prisma errors appear there.
 
 **Note:** That stack is a different product surface than **`frontend/`** + **`backend/`**. Mixing them can cause subtle API mismatches. For the Kodemy LMS UI in **`frontend/`**, deploying **`backend/`** on Render is the straightforward match.
