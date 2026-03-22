@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  enrollments   Enrollment[]
+  refreshTokens RefreshToken[]
+  videoProgress VideoProgress[]
+
+  @@map("users")
+}
+
+model Subject {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  /// Cover image URL (e.g. Unsplash) for course cards
+  thumbnail   String?
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  sections    Section[]
+  enrollments Enrollment[]
+
+  @@map("subjects")
+}
+
+model Section {
+  id         String   @id @default(cuid())
+  subjectId  String   @map("subject_id")
+  title      String
+  orderIndex Int      @default(0) @map("order_index")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  videos  Video[]
+
+  @@unique([subjectId, orderIndex])
+  @@map("sections")
+}
+
+model Video {
+  id              String   @id @default(cuid())
+  sectionId       String   @map("section_id")
+  title           String
+  description     String?
+  youtubeUrl      String   @map("youtube_url")
+  orderIndex      Int      @default(0) @map("order_index")
+  durationSeconds Int?     @map("duration_seconds")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  section  Section         @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  progress VideoProgress[]
+
+  @@unique([sectionId, orderIndex])
+  @@map("videos")
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  subjectId String   @map("subject_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, subjectId])
+  @@map("enrollments")
+}
+
+model VideoProgress {
+  id                  String    @id @default(cuid())
+  userId              String    @map("user_id")
+  videoId             String    @map("video_id")
+  lastPositionSeconds Int       @default(0) @map("last_position_seconds")
+  isCompleted         Boolean   @default(false) @map("is_completed")
+  completedAt         DateTime? @map("completed_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@map("video_progress")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, tokenHash])
+  @@map("refresh_tokens")
+}

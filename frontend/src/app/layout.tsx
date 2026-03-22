@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { DM_Sans, Syne } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "sonner";
 import { AuthHydrator } from "@/components/providers/AuthHydrator";
+import { Navbar } from "@/components/Layout/Navbar";
 
 const fontSans = DM_Sans({
   subsets: ["latin"],
@@ -18,15 +19,20 @@ const fontHeading = Syne({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+  ),
   title: "Kodemy — Learn by doing",
-  description: "A minimalist LMS with strict video ordering, progress tracking, and YouTube-based learning.",
+  description:
+    "A minimalist LMS with strict video ordering, progress tracking, and YouTube-based learning.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
@@ -34,9 +40,13 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased">
         <AuthHydrator />
-        {children}
+        <div className="min-h-screen flex flex-col">
+          <Navbar />
+          <main className="flex-1">{children}</main>
+        </div>
         <Toaster
           theme="dark"
+          className="pointer-events-none [&_li]:pointer-events-auto"
           toastOptions={{
             style: {
               background: "var(--card)",
