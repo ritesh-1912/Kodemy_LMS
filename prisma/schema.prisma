@@ -1,145 +1,291 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  password      String
+  passwordHash  String    @map("password_hash")
   name          String?
   image         String?
-  role          UserRole  @default(STUDENT)
+  role          String    @default("STUDENT")
   emailVerified DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  courses       Course[]
+  subjects       Subject[]
+  enrollments    Enrollment[]
+  reviews        Review[]
+  wishlist       Wishlist[]
+  orders         Order[]
+  discussions    SubjectDiscussion[]
+  refreshTokens  RefreshToken[]
+  videoProgress  VideoProgress[]
+}
+
+model Subject {
+  id           String   @id @default(cuid())
+  title        String
+  slug         String   @unique
+  description  String?
+  thumbnail    String?
+  category     String
+  price        Float    @default(0)
+  isPublished  Boolean  @default(false) @map("is_published")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  instructorId String
+
+  instructor    User                  @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  sections      Section[]
   enrollments   Enrollment[]
   reviews       Review[]
   wishlist      Wishlist[]
   orders        Order[]
-}
-
-enum UserRole {
-  STUDENT
-  INSTRUCTOR
-  BOTH
-}
-
-model Course {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  description String?
-  thumbnail   String?
-  category    String
-  price       Decimal  @db.Decimal(10, 2) @default(0)
-  published   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  instructorId String
-
-  instructor  User         @relation(fields: [instructorId], references: [id], onDelete: Cascade)
-  sections    Section[]
-  enrollments Enrollment[]
-  reviews     Review[]
-  wishlist    Wishlist[]
+  announcements SubjectAnnouncement[]
+  discussions   SubjectDiscussion[]
 }
 
 model Section {
+  id         String   @id @default(cuid())
+  title      String
+  orderIndex Int      @default(0) @map("order_index")
+  subjectId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  videos  Video[]
+
+  @@unique([subjectId, orderIndex])
+}
+
+model Video {
+  id              String   @id @default(cuid())
+  title           String
+  youtubeUrl      String   @map("youtube_url")
+  orderIndex      Int      @default(0) @map("order_index")
+  durationSeconds Int?     @map("duration_seconds")
+  sectionId       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  section    Section         @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  progress   VideoProgress[]
+  resources  VideoResource[]
+  notes      VideoNote[]
+  quiz       Quiz?
+  assignment Assignment?
+
+  @@unique([sectionId, orderIndex])
+}
+
+model VideoResource {
   id        String   @id @default(cuid())
+  videoId   String
   title     String
+  url       String
+  type      String   @default("file")
   order     Int      @default(0)
-  courseId  String
+  createdAt DateTime @default(now())
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+}
+
+model VideoNote {
+  id        String   @id @default(cuid())
+  userId    String
+  videoId   String
+  content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessons Lesson[]
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
 }
 
-model Lesson {
+model Quiz {
   id          String   @id @default(cuid())
+  videoId     String   @unique
   title       String
-  videoUrl    String
-  order       Int      @default(0)
-  duration    Int?     // in minutes
-  sectionId   String
+  passScore   Int      @default(70)
+  maxAttempts Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  section   Section    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  progress  Progress[]
+  video     Video          @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+}
+
+model QuizQuestion {
+  id        String   @id @default(cuid())
+  quizId    String
+  question  String
+  type      String   @default("multiple")
+  options   String
+  correct   Int
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model QuizAttempt {
+  id           String   @id @default(cuid())
+  enrollmentId String
+  quizId       String
+  score        Int
+  answers      String
+  passed       Boolean
+  createdAt    DateTime @default(now())
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model Assignment {
+  id           String   @id @default(cuid())
+  videoId      String   @unique
+  title        String
+  instructions String
+  dueDays      Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  video       Video                  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  submissions AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id           String    @id @default(cuid())
+  assignmentId String
+  userId       String
+  content      String?
+  fileUrl      String?
+  grade        Float?
+  feedback     String?
+  submittedAt  DateTime  @default(now())
+  gradedAt     DateTime?
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+}
+
+model SubjectAnnouncement {
+  id        String   @id @default(cuid())
+  subjectId String
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+}
+
+model SubjectDiscussion {
+  id        String   @id @default(cuid())
+  subjectId String
+  userId    String
+  videoId   String?
+  content   String
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Certificate {
+  id           String   @id @default(cuid())
+  enrollmentId String   @unique
+  subjectId    String
+  userId       String
+  issuedAt     DateTime @default(now())
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 }
 
 model Enrollment {
-  id          String   @id @default(cuid())
-  userId      String
-  courseId    String
-  purchasedAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  subjectId String
+  createdAt DateTime @default(now())
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course   Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  progress Progress[]
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject     Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  certificate Certificate?
 
-  @@unique([userId, courseId])
+  @@unique([userId, subjectId])
 }
 
-model Progress {
-  id           String   @id @default(cuid())
-  enrollmentId String
-  lessonId     String
-  completedAt DateTime @default(now())
+model VideoProgress {
+  id                  String    @id @default(cuid())
+  userId              String
+  videoId             String
+  lastPositionSeconds Int       @default(0) @map("last_position_seconds")
+  isCompleted         Boolean   @default(false) @map("is_completed")
+  completedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  lesson     Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
-  @@unique([enrollmentId, lessonId])
+  @@unique([userId, videoId])
 }
 
 model Review {
   id        String   @id @default(cuid())
   userId    String
-  courseId  String
-  rating    Int      // 1-5
+  subjectId String
+  rating    Int
   content   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, courseId])
+  @@unique([userId, subjectId])
 }
 
 model Wishlist {
   id        String   @id @default(cuid())
   userId    String
-  courseId  String
+  subjectId String
   createdAt DateTime @default(now())
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, courseId])
+  @@unique([userId, subjectId])
 }
 
 model Order {
-  id          String   @id @default(cuid())
-  userId      String
-  courseId    String
-  amount      Decimal  @db.Decimal(10, 2)
-  status      String   @default("completed") // mock always completed
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  subjectId String
+  amount    Float
+  status    String   @default("completed")
+  createdAt DateTime @default(now())
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
