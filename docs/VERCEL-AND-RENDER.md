@@ -11,7 +11,7 @@ The API route uses **Prisma** to read the database. A 500 often means one of:
 | Cause | What to do |
 |--------|------------|
 | **`DATABASE_URL` not set** on Render | Add it in Render → Environment |
-| **Tables don’t exist** (never ran `db push` / migrate in production) | Run `prisma db push` (or migrate) as part of deploy / once in Shell |
+| **Tables don't exist** (never ran `db push` / migrate in production) | Run `prisma db push` (or migrate) as part of deploy / once in Shell |
 | **No seed data** | You may get an **empty** list (still HTTP 200), not 500 — 500 usually means crash |
 | **Wrong app** | The UI in **`frontend/`** is built for the **Express** app in **`backend/`**, not necessarily the **root** Next.js app |
 
@@ -60,11 +60,13 @@ The Kodemy UI under **`frontend/`** expects the **Express + Prisma** API in **`b
 
 If `https://kodemy-lms.onrender.com` is the **repo root** Next app (`npm run build` / `next start`):
 
-1. Set **`DATABASE_URL`** on that service (e.g. `file:./prisma/prod.db`).
-2. Use a **Build Command** that creates tables before `next build`, e.g.:  
-   `npm install && npx prisma generate && npx prisma db push && npm run build`
-3. Run **`npx prisma db seed`** once in Render Shell if you have a seed.
-4. Check **Logs** if `/api/subjects` still returns 500.
+1. Set **`DATABASE_URL`** on that service (e.g. `file:./prisma/prod.db`). **Without this, `/api/subjects` returns 500** at runtime.
+2. **Build Command** (must apply schema before `next build`):  
+   `npm install && npm run build:render`  
+   (`build:render` runs `prisma db push && next build` — see root `package.json`.)
+3. **Start Command:** `npm start`
+4. After first deploy, open **Shell** and run **`npm run db:seed`** once so published subjects exist (or the homepage shows "No subjects yet" with no error).
+5. If you still see **500**, open **Runtime logs** (not only build logs) — Prisma errors appear there.
 
 **Note:** That stack is a different product surface than **`frontend/`** + **`backend/`**. Mixing them can cause subtle API mismatches. For the Kodemy LMS UI in **`frontend/`**, deploying **`backend/`** on Render is the straightforward match.
 
