@@ -150,6 +150,7 @@ More detail: **[docs/DATABASE.md](./docs/DATABASE.md)** and **[SPEC.md](./SPEC.m
 | **README.md** | Overview, setup, commands (this file) |
 | **SPEC.md** | Requirements checklist vs current code |
 | **[docs/DATABASE.md](./docs/DATABASE.md)** | Prisma, SQLite vs MySQL, where the schema lives |
+| **[docs/VERCEL-AND-RENDER.md](./docs/VERCEL-AND-RENDER.md)** | Fix empty homepage / 500 from API on Vercel + Render |
 
 ---
 
