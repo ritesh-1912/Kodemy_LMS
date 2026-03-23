@@ -4,10 +4,11 @@
  */
 export function refreshCookieOptions(expires: Date) {
   const isProd = process.env.NODE_ENV === "production";
+  const sameSite: "lax" | "none" | "strict" = isProd ? "none" : "lax";
   return {
     httpOnly: true,
     secure: isProd,
-    sameSite: (isProd ? "none" : "lax") as const,
+    sameSite,
     path: "/",
     domain: process.env.COOKIE_DOMAIN || undefined,
     expires,
