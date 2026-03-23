@@ -3,6 +3,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { issueAccessToken, issueRefreshToken, sha256Hex } from "@/lib/jwtAuth";
+import { refreshCookieOptions } from "@/lib/authCookie";
 
 const registerSchema = z.object({
   name: z.string().min(1).optional(),
@@ -53,19 +54,15 @@ export async function POST(req: Request) {
   });
 
   const cookieName = process.env.REFRESH_COOKIE_NAME ?? "refresh_token";
-  const domain = process.env.COOKIE_DOMAIN ?? undefined;
   const res = NextResponse.json({
     access_token,
     user: { id: user.id, name: user.name ?? "", email: user.email },
   });
-  res.cookies.set(cookieName, refreshTokenPlain, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    domain,
-    expires: expiresAt,
-  });
+  res.cookies.set(
+    cookieName,
+    refreshTokenPlain,
+    refreshCookieOptions(expiresAt)
+  );
 
   return res;
 }
