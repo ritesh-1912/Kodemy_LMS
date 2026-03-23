@@ -69,7 +69,9 @@ async function main() {
               create: [
                 {
                   title: "Components and JSX",
-                  youtubeUrl: "https://www.youtube.com/watch?v=9YkUCRPnHlo",
+                  // Replaced 9YkUCRPnHlo (often "Video unavailable")
+                  youtubeUrl:
+                    "https://www.youtube.com/watch?v=Ke90Tje7VS0",
                   orderIndex: 0,
                   durationSeconds: 1080,
                 },
@@ -200,6 +202,14 @@ async function main() {
       create: { userId: student.id, subjectId },
     });
   }
+
+  // Fix known dead embeds for DBs seeded before URL updates
+  await prisma.video.updateMany({
+    where: { title: "Components and JSX" },
+    data: {
+      youtubeUrl: "https://www.youtube.com/watch?v=Ke90Tje7VS0",
+    },
+  });
 
   console.log("Seed done:", {
     instructor: instructor.email,

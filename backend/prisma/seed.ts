@@ -73,7 +73,8 @@ async function main() {
               create: [
                 {
                   title: "Components and JSX",
-                  youtubeUrl: "https://www.youtube.com/watch?v=9YkUCRPnHlo",
+                  youtubeUrl:
+                    "https://www.youtube.com/watch?v=Ke90Tje7VS0",
                   orderIndex: 0,
                   durationSeconds: 1080,
                 },
@@ -200,6 +201,13 @@ async function main() {
       create: { userId: student.id, subjectId },
     });
   }
+
+  await prisma.video.updateMany({
+    where: { title: "Components and JSX" },
+    data: {
+      youtubeUrl: "https://www.youtube.com/watch?v=Ke90Tje7VS0",
+    },
+  });
 
   console.log("Seed done:", {
     instructor: instructor.email,
